@@ -3,8 +3,6 @@ Staking interface
 
 EIP-900 staking interface
 
-https://github.com/gysr-io/core
-
 h/t https://github.com/ethereum/EIPs/blob/master/EIPS/eip-900.md
 
 SPDX-License-Identifier: MIT

@@ -1,12 +1,8 @@
 /*
-Geyser token pool
+SuperNova token pool
 
 Simple contract to implement token pool of arbitrary ERC20 token.
-This is owned and used by a parent Geyser
-
-https://github.com/gysr-io/core
-
-h/t https://github.com/ampleforth/token-geyser
+This is owned and used by a parent SuperNova
 
 SPDX-License-Identifier: MIT
 */
@@ -17,7 +13,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-contract GeyserPool is Ownable {
+contract SuperNovaPool is Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public token;

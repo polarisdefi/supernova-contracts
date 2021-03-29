@@ -11,7 +11,7 @@ SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
 import "./ISuperNovaFactory.sol";
-import "./Geyser.sol";
+import "./SuperNova.sol";
 
 contract SuperNovaFactory is ISuperNovaFactory {
     // fields
@@ -37,7 +37,7 @@ contract SuperNovaFactory is ISuperNovaFactory {
         uint256 bonusPeriod
     ) public override returns (address) {
         // create
-        Geyser geyser = new Geyser(
+        SuperNova superNova = new SuperNova(
             stakingToken,
             rewardToken,
             bonusMin,
@@ -45,15 +45,15 @@ contract SuperNovaFactory is ISuperNovaFactory {
             bonusPeriod,
             _supernova
         );
-        geyser.transferOwnership(msg.sender);
+        superNova.transferOwnership(msg.sender);
 
         // bookkeeping
-        map[address(geyser)] = true;
-        list.push(address(geyser));
+        map[address(superNova)] = true;
+        list.push(address(superNova));
 
         // output
-        emit SuperNovaCreated(msg.sender, address(geyser));
-        return address(geyser);
+        emit SuperNovaCreated(msg.sender, address(superNova));
+        return address(superNova);
     }
 
     /**

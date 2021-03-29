@@ -1706,4 +1706,16 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
             totalUnlocked().add(deltaUnlocked)
         );
     }
+
+    function unlockFundInSec(uint256 timestamp) external view returns (uint256 unlockAmount) {
+        unlockAmount = 0;
+        uint256 fundingLen = fundings.length;
+        for (uint8 i=0; i<fundingLen; i++) {
+            Funding storage funding = fundings[i];
+            if (timestamp >= funding.end) {
+                return funding.shares.sub(funding.unlocked);
+            }
+            unlockAmount = unlockAmount.add((funding.shares).div(funding.duration));
+        }
+    }
 }

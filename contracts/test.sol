@@ -697,23 +697,23 @@ interface IStaking {
 }
 
 
-// File: contracts/IGeyser.sol
+// File: contracts/ISuperNova.sol
+
 
 /*
-Geyser interface
+Supernova interface
 
-This defines the core Geyser contract interface as an extension to the
+This defines the core SuperNova contract interface as an extension to the
 standard IStaking interface
 
-https://github.com/gysr-io/core
 */
 
 pragma solidity ^0.6.12;
 
 /**
- * @title Geyser interface
+ * @title SuperNova interface
  */
-abstract contract IGeyser is IStaking, Ownable {
+abstract contract ISuperNova is IStaking, Ownable {
     // events
     event RewardsDistributed(address indexed user, uint256 amount);
     event RewardsFunded(
@@ -724,8 +724,8 @@ abstract contract IGeyser is IStaking, Ownable {
     );
     event RewardsUnlocked(uint256 amount, uint256 total);
     event RewardsExpired(uint256 amount, uint256 duration, uint256 start);
-    event GysrSpent(address indexed user, uint256 amount);
-    event GysrWithdrawn(uint256 amount);
+    event PolarSpent(address indexed user, uint256 amount);
+    event PolarWithdrawn(uint256 amount);
 
     // IStaking
     /**
@@ -736,26 +736,26 @@ abstract contract IGeyser is IStaking, Ownable {
         return false;
     }
 
-    // IGeyser
+    // ISuperNova
     /**
-     * @return staking token for this Geyser
+     * @return staking token for this SuperNova
      */
     function stakingToken() external virtual view returns (address);
 
     /**
-     * @return reward token for this Geyser
+     * @return reward token for this SuperNova
      */
     function rewardToken() external virtual view returns (address);
 
     /**
-     * @notice fund Geyser by locking up reward tokens for distribution
+     * @notice fund SuperNova by locking up reward tokens for distribution
      * @param amount number of reward tokens to lock up as funding
      * @param duration period (seconds) over which funding will be unlocked
      */
     function fund(uint256 amount, uint256 duration) external virtual;
 
     /**
-     * @notice fund Geyser by locking up reward tokens for future distribution
+     * @notice fund SuperNova by locking up reward tokens for future distribution
      * @param amount number of reward tokens to lock up as funding
      * @param duration period (seconds) over which funding will be unlocked
      * @param start time (seconds) at which funding begins to unlock
@@ -767,19 +767,19 @@ abstract contract IGeyser is IStaking, Ownable {
     ) external virtual;
 
     /**
-     * @notice withdraw GYSR tokens applied during unstaking
-     * @param amount number of GYSR to withdraw
+     * @notice withdraw POLAR tokens applied during unstaking
+     * @param amount number of POLAR to withdraw
      */
     function withdraw(uint256 amount) external virtual;
 
     /**
-     * @notice unstake while applying GYSR token for boosted rewards
+     * @notice unstake while applying POLAR token for boosted rewards
      * @param amount number of tokens to unstake
-     * @param gysr number of GYSR tokens to apply for boost
+     * @param polar number of POLAR tokens to apply for boost
      */
     function unstake(
         uint256 amount,
-        uint256 gysr,
+        uint256 polar,
         bytes calldata
     ) external virtual;
 
@@ -789,28 +789,26 @@ abstract contract IGeyser is IStaking, Ownable {
     function update() external virtual;
 
     /**
-     * @notice clean geyser, expire old fundings, etc.
+     * @notice clean SuperNova, expire old fundings, etc.
      */
     function clean() external virtual;
 }
 
 
-// File: contracts/GeyserPool.sol
+// File: contracts/SuperNovaPool.sol
+
 
 /*
-Geyser token pool
+SuperNova token pool
 
 Simple contract to implement token pool of arbitrary ERC20 token.
-This is owned and used by a parent Geyser
+This is owned and used by a parent SuperNova
 
-https://github.com/gysr-io/core
-
-h/t https://github.com/ampleforth/token-geyser
 */
 
 pragma solidity ^0.6.12;
 
-contract GeyserPool is Ownable {
+contract SuperNovaPool is Ownable {
     using SafeERC20 for IERC20;
 
     IERC20 public token;
@@ -827,7 +825,6 @@ contract GeyserPool is Ownable {
         token.safeTransfer(to, value);
     }
 }
-
 
 // File: contracts/MathUtils.sol
 
@@ -940,23 +937,20 @@ library MathUtils {
 // File: contracts/Geyser.sol
 
 /*
-Geyser
+SuperNova
 
-This implements the core Geyser contract, which allows for generalized
+This implements the core SuperNova contract, which allows for generalized
 staking, yield farming, and token distribution. This also implements
-the GYSR spending mechanic for boosted reward distribution.
+the POLAR spending mechanic for boosted reward distribution.
 
-https://github.com/gysr-io/core
-
-h/t https://github.com/ampleforth/token-geyser
 */
 
 pragma solidity ^0.6.12;
 
 /**
- * @title Geyser
+ * @title SuperNova
  */
-contract Geyser is IGeyser, ReentrancyGuard {
+contract SuperNova is ISuperNova, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using MathUtils for int128;
@@ -991,9 +985,9 @@ contract Geyser is IGeyser, ReentrancyGuard {
     uint256 public constant MAX_ACTIVE_FUNDINGS = 16;
 
     // token pool fields
-    GeyserPool private immutable _stakingPool;
-    GeyserPool private immutable _unlockedPool;
-    GeyserPool private immutable _lockedPool;
+    SuperNovaPool private immutable _stakingPool;
+    SuperNovaPool private immutable _unlockedPool;
+    SuperNovaPool private immutable _lockedPool;
     Funding[] public fundings;
 
     // user staking fields
@@ -1009,12 +1003,12 @@ contract Geyser is IGeyser, ReentrancyGuard {
     uint256 public totalLockedShares;
     uint256 public totalStakingShares;
     uint256 public totalRewards;
-    uint256 public totalGysrRewards;
+    uint256 public totalPolarRewards;
     uint256 public totalStakingShareSeconds;
     uint256 public lastUpdated;
 
-    // gysr fields
-    IERC20 private immutable _gysr;
+    // polar fields
+    IERC20 private immutable _polar;
 
     /**
      * @param stakingToken_ the token that will be staked
@@ -1022,7 +1016,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
      * @param bonusMin_ initial time bonus
      * @param bonusMax_ maximum time bonus
      * @param bonusPeriod_ period (in seconds) over which time bonus grows to max
-     * @param gysr_ address for GYSR token
+     * @param polar_ address for Polar token
      */
     constructor(
         address stakingToken_,
@@ -1030,22 +1024,22 @@ contract Geyser is IGeyser, ReentrancyGuard {
         uint256 bonusMin_,
         uint256 bonusMax_,
         uint256 bonusPeriod_,
-        address gysr_
+        address polar_
     ) public {
         require(
             bonusMin_ <= bonusMax_,
-            "Geyser: initial time bonus greater than max"
+            "SuperNova: initial time bonus greater than max"
         );
 
-        _stakingPool = new GeyserPool(stakingToken_);
-        _unlockedPool = new GeyserPool(rewardToken_);
-        _lockedPool = new GeyserPool(rewardToken_);
+        _stakingPool = new SuperNovaPool(stakingToken_);
+        _unlockedPool = new SuperNovaPool(rewardToken_);
+        _lockedPool = new SuperNovaPool(rewardToken_);
 
         bonusMin = bonusMin_;
         bonusMax = bonusMax_;
         bonusPeriod = bonusPeriod_;
 
-        _gysr = IERC20(gysr_);
+        _polar = IERC20(polar_);
 
         lastUpdated = block.timestamp;
     }
@@ -1108,31 +1102,31 @@ contract Geyser is IGeyser, ReentrancyGuard {
         return address(_stakingPool.token());
     }
 
-    // IGeyser
+    // ISuperNova
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function stakingToken() public override view returns (address) {
         return address(_stakingPool.token());
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function rewardToken() public override view returns (address) {
         return address(_unlockedPool.token());
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function fund(uint256 amount, uint256 duration) public override {
         fund(amount, duration, block.timestamp);
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function fund(
         uint256 amount,
@@ -1140,11 +1134,11 @@ contract Geyser is IGeyser, ReentrancyGuard {
         uint256 start
     ) public override onlyOwner {
         // validate
-        require(amount > 0, "Geyser: funding amount is zero");
-        require(start >= block.timestamp, "Geyser: funding start is past");
+        require(amount > 0, "SuperNova: funding amount is zero");
+        require(start >= block.timestamp, "SuperNova: funding start is past");
         require(
             fundings.length < MAX_ACTIVE_FUNDINGS,
-            "Geyser: exceeds max active funding schedules"
+            "SuperNova: exceeds max active funding schedules"
         );
 
         // update bookkeeping
@@ -1181,43 +1175,43 @@ contract Geyser is IGeyser, ReentrancyGuard {
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function withdraw(uint256 amount) external override onlyOwner {
-        require(amount > 0, "Geyser: withdraw amount is zero");
+        require(amount > 0, "SuperNova: withdraw amount is zero");
         require(
-            amount <= _gysr.balanceOf(address(this)),
-            "Geyser: withdraw amount exceeds balance"
+            amount <= _polar.balanceOf(address(this)),
+            "SuperNova: withdraw amount exceeds balance"
         );
         // do transfer
         //Burn Half tokens and half transfer to owner address
         uint256 burnedToken = amount / 2;
-        _gysr.safeTransfer(address(0), burnedToken);
-        _gysr.safeTransfer(msg.sender, burnedToken);
+        _polar.safeTransfer(address(0), burnedToken);
+        _polar.safeTransfer(msg.sender, burnedToken);
 
-        emit GysrWithdrawn(amount);
+        emit PolarWithdrawn(amount);
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function unstake(
         uint256 amount,
-        uint256 gysr,
+        uint256 polar,
         bytes calldata
     ) external override {
-        _unstake(amount, gysr);
+        _unstake(amount, polar);
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function update() external override nonReentrant {
         _update(msg.sender);
     }
 
     /**
-     * @inheritdoc IGeyser
+     * @inheritdoc ISuperNova
      */
     function clean() external override onlyOwner {
         // update bookkeeping
@@ -1246,7 +1240,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
         }
     }
 
-    // Geyser
+    // SuperNova
 
     /**
      * @dev internal implementation of staking methods
@@ -1260,17 +1254,17 @@ contract Geyser is IGeyser, ReentrancyGuard {
         uint256 amount
     ) private nonReentrant {
         // validate
-        require(amount > 0, "Geyser: stake amount is zero");
+        require(amount > 0, "SuperNova: stake amount is zero");
         require(
             beneficiary != address(0),
-            "Geyser: beneficiary is zero address"
+            "Supernova: beneficiary is zero address"
         );
 
         // mint staking shares at current rate
         uint256 mintedStakingShares = (totalStakingShares > 0)
             ? totalStakingShares.mul(amount).div(totalStaked())
             : amount.mul(INITIAL_SHARES_PER_TOKEN);
-        require(mintedStakingShares > 0, "Geyser: stake amount too small");
+        require(mintedStakingShares > 0, "SuperNova: stake amount too small");
 
         // update bookkeeping
         _update(beneficiary);
@@ -1300,19 +1294,19 @@ contract Geyser is IGeyser, ReentrancyGuard {
     /**
      * @dev internal implementation of unstaking methods
      * @param amount number of tokens to unstake
-     * @param gysr number of GYSR tokens applied to unstaking operation
+     * @param polar number of POLAR tokens applied to unstaking operation
      * @return number of reward tokens distributed
      */
-    function _unstake(uint256 amount, uint256 gysr)
+    function _unstake(uint256 amount, uint256 polar)
         private
         nonReentrant
         returns (uint256)
     {
         // validate
-        require(amount > 0, "Geyser: unstake amount is zero");
+        require(amount > 0, "SuperNova: unstake amount is zero");
         require(
             totalStakedFor(msg.sender) >= amount,
-            "Geyser: unstake amount exceeds balance"
+            "Supernova: unstake amount exceeds balance"
         );
 
         // update bookkeeping
@@ -1321,18 +1315,18 @@ contract Geyser is IGeyser, ReentrancyGuard {
         // do unstaking, first-in last-out, respecting time bonus
         uint256 timeWeightedShareSeconds = _unstakeFirstInLastOut(amount);
 
-        // compute and apply GYSR token bonus
-        uint256 gysrWeightedShareSeconds = gysrBonus(gysr)
+        // compute and apply POLAR token bonus
+        uint256 polarWeightedShareSeconds = polarBonus(polar)
             .mul(timeWeightedShareSeconds)
             .div(10**BONUS_DECIMALS);
 
         uint256 rewardAmount = totalUnlocked()
-            .mul(gysrWeightedShareSeconds)
-            .div(totalStakingShareSeconds.add(gysrWeightedShareSeconds));
+            .mul(polarWeightedShareSeconds)
+            .div(totalStakingShareSeconds.add(polarWeightedShareSeconds));
 
         // update global stats for distributions
-        if (gysr > 0) {
-            totalGysrRewards = totalGysrRewards.add(rewardAmount);
+        if (polar > 0) {
+            totalPolarRewards = totalPolarRewards.add(rewardAmount);
         }
         totalRewards = totalRewards.add(rewardAmount);
 
@@ -1343,9 +1337,9 @@ contract Geyser is IGeyser, ReentrancyGuard {
             _unlockedPool.transfer(msg.sender, rewardAmount);
             emit RewardsDistributed(msg.sender, rewardAmount);
         }
-        if (gysr > 0) {
-            _gysr.safeTransferFrom(msg.sender, address(this), gysr);
-            emit GysrSpent(msg.sender, gysr);
+        if (polar > 0) {
+            _polar.safeTransferFrom(msg.sender, address(this), polar);
+            emit PolarSpent(msg.sender, polar);
         }
         return rewardAmount;
     }
@@ -1361,7 +1355,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
         uint256 stakingSharesToBurn = totalStakingShares.mul(amount).div(
             totalStaked()
         );
-        require(stakingSharesToBurn > 0, "Geyser: unstake amount too small");
+        require(stakingSharesToBurn > 0, "Supernova: unstake amount too small");
 
         // redeem from most recent stake and go backwards in time.
         uint256 shareSecondsToBurn = 0;
@@ -1518,22 +1512,22 @@ contract Geyser is IGeyser, ReentrancyGuard {
     }
 
     /**
-     * @notice compute GYSR bonus as a function of usage ratio and GYSR spent
-     * @param gysr number of GYSR token applied to bonus
+     * @notice compute POLAR bonus as a function of usage ratio and POLAR spent
+     * @param polar number of POLAR token applied to bonus
      * @return multiplier value
      */
-    function gysrBonus(uint256 gysr) public view returns (uint256) {
-        if (gysr == 0) {
+    function polarBonus(uint256 polar) public view returns (uint256) {
+        if (polar == 0) {
             return 10**BONUS_DECIMALS;
         }
         require(
-            gysr >= 10**BONUS_DECIMALS,
-            "Geyser: GYSR amount is between 0 and 1"
+            polar >= 10**BONUS_DECIMALS,
+            "SUPERNOVA: POLAR amount is between 0 and 1"
         );
 
         uint256 buffer = uint256(10**(BONUS_DECIMALS - 2)); // 0.01
         uint256 r = ratio().add(buffer);
-        uint256 x = gysr.add(buffer);
+        uint256 x = polar.add(buffer);
 
         return
             uint256(10**BONUS_DECIMALS).add(
@@ -1544,16 +1538,16 @@ contract Geyser is IGeyser, ReentrancyGuard {
     }
 
     /**
-     * @return portion of rewards which have been boosted by GYSR token
+     * @return portion of rewards which have been boosted by POLAR token
      */
     function ratio() public view returns (uint256) {
         if (totalRewards == 0) {
             return 0;
         }
-        return totalGysrRewards.mul(10**BONUS_DECIMALS).div(totalRewards);
+        return totalPolarRewards.mul(10**BONUS_DECIMALS).div(totalRewards);
     }
 
-    // Geyser -- informational functions
+    // SuperNova -- informational functions
 
     /**
      * @return total number of locked reward tokens
@@ -1585,7 +1579,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
     }
 
     /**
-     * @notice preview estimated reward distribution for full unstake with no GYSR applied
+     * @notice preview estimated reward distribution for full unstake with no POLAR applied
      * @return estimated reward
      * @return estimated overall multiplier
      * @return estimated raw user share seconds that would be burned
@@ -1608,7 +1602,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
      * @notice preview estimated reward distribution for unstaking
      * @param addr address of interest for preview
      * @param amount number of tokens that would be unstaked
-     * @param gysr number of GYSR tokens that would be applied
+     * @param polar number of POLAR tokens that would be applied
      * @return estimated reward
      * @return estimated overall multiplier
      * @return estimated raw user share seconds that would be burned
@@ -1617,7 +1611,7 @@ contract Geyser is IGeyser, ReentrancyGuard {
     function preview(
         address addr,
         uint256 amount,
-        uint256 gysr
+        uint256 polar
     )
         public
         view
@@ -1648,12 +1642,12 @@ contract Geyser is IGeyser, ReentrancyGuard {
         // check unstake amount
         require(
             amount <= totalStakedFor(addr),
-            "Geyser: preview amount exceeds balance"
+            "SuperNova: preview amount exceeds balance"
         );
 
         // compute unstake amount in shares
         uint256 shares = totalStakingShares.mul(amount).div(totalStaked());
-        require(shares > 0, "Geyser: preview amount too small");
+        require(shares > 0, "SuperNova: preview amount too small");
 
         uint256 rawShareSeconds = 0;
         uint256 timeBonusShareSeconds = 0;
@@ -1685,24 +1679,24 @@ contract Geyser is IGeyser, ReentrancyGuard {
             i = i.sub(1);
         }
 
-        // apply gysr bonus
-        uint256 gysrBonusShareSeconds = gysrBonus(gysr)
+        // apply polar bonus
+        uint256 polarBonusShareSeconds = polarBonus(polar)
             .mul(timeBonusShareSeconds)
             .div(10**BONUS_DECIMALS);
 
         // compute rewards based on expected updates
         uint256 expectedTotalShareSeconds = totalStakingShareSeconds
             .add((block.timestamp.sub(lastUpdated)).mul(totalStakingShares))
-            .add(gysrBonusShareSeconds)
+            .add(polarBonusShareSeconds)
             .sub(rawShareSeconds);
 
         uint256 reward = (totalUnlocked().add(deltaUnlocked))
-            .mul(gysrBonusShareSeconds)
+            .mul(polarBonusShareSeconds)
             .div(expectedTotalShareSeconds);
 
         // compute effective bonus
         uint256 bonus = uint256(10**BONUS_DECIMALS)
-            .mul(gysrBonusShareSeconds)
+            .mul(polarBonusShareSeconds)
             .div(rawShareSeconds);
 
         return (

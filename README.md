@@ -45,3 +45,14 @@ To deploy the SuperNova factory contract to Ropsten
 ```
 npx truffle migrate --network ropsten --f 2 --to 2
 ```
+
+
+To Verify the contracts deployed from Truffle 
+```
+truffle run verify SuperNovaFactory --network binance_test
+```
+
+For SuperNova, Use Test.sol file and https://abi.hashex.org/ to get constructor abi encoded
+
+Opitimzation Yes and : 10000 
+Liscence : MIT

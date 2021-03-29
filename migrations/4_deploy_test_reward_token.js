@@ -3,5 +3,5 @@
 const PolarisToken = artifacts.require('PolarisRewardToken');
 
 module.exports = function (deployer) {
-    deployer.deploy(PolarisToken);
+    // deployer.deploy(PolarisToken);
 }

@@ -1,7 +1,7 @@
 {
-  "name": "geyser",
+  "name": "supernova",
   "version": "1.0.0",
-  "description": "Geyser factory, GYSR token, and Geyser core",
+  "description": "Supernova factory, POLAR token, and Supernova core",
   "directories": {
     "test": "test"
   },

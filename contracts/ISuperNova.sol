@@ -1,5 +1,5 @@
 /*
-Geyser interface
+Supernova interface
 
 This defines the core SuperNova contract interface as an extension to the
 standard IStaking interface

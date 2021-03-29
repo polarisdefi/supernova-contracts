@@ -17,7 +17,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface ISuperNovaFactory {
     // events
-    event SuperNovaCreated(address indexed user, address geyser);
+    event SuperNovaCreated(address indexed user, address supernova);
 
     /**
      * @notice create a new SuperNova

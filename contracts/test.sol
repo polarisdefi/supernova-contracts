@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-11-04
-*/
-
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
 // SPDX-License-Identifier: MIT

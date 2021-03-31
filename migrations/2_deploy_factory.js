@@ -3,7 +3,7 @@
 const SuperNovaFactory = artifacts.require('SuperNovaFactory');
 
 // set address of POLAR token contract
-const POLAR_ADDRESS = '0x1C545E9943CFd1b41E60a7917465911fa00Fc28C';
+const POLAR_ADDRESS = '0x3a5325F0E5Ee4da06a285E988f052D4e45Aa64b4';
 
 module.exports = function (deployer) {
     deployer.deploy(SuperNovaFactory, POLAR_ADDRESS);

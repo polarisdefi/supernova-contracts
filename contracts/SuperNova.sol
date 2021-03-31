@@ -258,9 +258,9 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
         );
         // do transfer
         //Burn Half tokens and half transfer to owner address
-        uint256 burnedToken = amount / 2;
-        _polar.safeTransfer(address(0), burnedToken);
-        _polar.safeTransfer(msg.sender, burnedToken);
+        uint256 burnedToken = amount.div(2);
+        _polar.transfer(address(1), burnedToken);
+        _polar.transfer(msg.sender, burnedToken);
 
         emit PolarWithdrawn(amount);
     }
@@ -411,7 +411,7 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
             emit RewardsDistributed(msg.sender, rewardAmount);
         }
         if (polar > 0) {
-            _polar.safeTransferFrom(msg.sender, address(this), polar);
+            _polar.transferFrom(msg.sender, address(this), polar);
             emit PolarSpent(msg.sender, polar);
         }
         return rewardAmount;

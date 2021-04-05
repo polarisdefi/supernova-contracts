@@ -1,3 +1,7 @@
+/**
+ *Submitted for verification at Etherscan.io on 2020-11-04
+*/
+
 // File: @openzeppelin/contracts/math/SafeMath.sol
 
 // SPDX-License-Identifier: MIT
@@ -619,11 +623,8 @@ contract ReentrancyGuard {
 
 /*
 Staking interface
-
 EIP-900 staking interface
-
 https://github.com/gysr-io/core
-
 h/t https://github.com/ethereum/EIPs/blob/master/EIPS/eip-900.md
 */
 
@@ -698,10 +699,8 @@ interface IStaking {
 
 /*
 Supernova interface
-
 This defines the core SuperNova contract interface as an extension to the
 standard IStaking interface
-
 */
 
 pragma solidity ^0.6.12;
@@ -796,10 +795,8 @@ abstract contract ISuperNova is IStaking, Ownable {
 
 /*
 SuperNova token pool
-
 Simple contract to implement token pool of arbitrary ERC20 token.
 This is owned and used by a parent SuperNova
-
 */
 
 pragma solidity ^0.6.12;
@@ -826,12 +823,9 @@ contract SuperNovaPool is Ownable {
 
 /*
 Math utilities
-
 This library implements various logarithmic math utilies which support
 other contracts and specifically the GYSR multiplier calculation
-
 https://github.com/gysr-io/core
-
 h/t https://github.com/abdk-consulting/abdk-libraries-solidity
 */
 
@@ -934,11 +928,9 @@ library MathUtils {
 
 /*
 SuperNova
-
 This implements the core SuperNova contract, which allows for generalized
 staking, yield farming, and token distribution. This also implements
 the POLAR spending mechanic for boosted reward distribution.
-
 */
 
 pragma solidity ^0.6.12;

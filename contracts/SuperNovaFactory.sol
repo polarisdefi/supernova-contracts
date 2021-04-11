@@ -1,7 +1,7 @@
 /*
 Supernova Factory 
 This implements the core Supernova contract, which allows for generalized staking, yield farming, and token distribution. This also implements the POLAR spending mechanic for boosted reward distribution.
-8:05
+
 Credit to: 
 https://github.com/ampleforth/token-geyser
 https://github.com/gysr-io/core

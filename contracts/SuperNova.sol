@@ -593,10 +593,6 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
         if (polar == 0) {
             return 10**BONUS_DECIMALS;
         }
-        require(
-            polar >= 10**BONUS_DECIMALS,
-            "SUPERNOVA: POLAR amount is between 0 and 1"
-        );
 
         uint256 buffer = uint256(10**(BONUS_DECIMALS - 2)); // 0.01
         uint256 r = ratio().add(buffer);

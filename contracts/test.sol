@@ -930,15 +930,13 @@ library MathUtils {
 }
 
 
-// File: contracts/Geyser.sol
-
+// File: contracts/SuperNova.sol
 /*
 SuperNova
 
 This implements the core SuperNova contract, which allows for generalized
 staking, yield farming, and token distribution. This also implements
 the POLAR spending mechanic for boosted reward distribution.
-
 */
 
 pragma solidity ^0.6.12;
@@ -1516,7 +1514,6 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
         if (polar == 0) {
             return 10**BONUS_DECIMALS;
         }
-
 
         uint256 buffer = uint256(10**(BONUS_DECIMALS - 2)); // 0.01
         uint256 r = ratio().add(buffer);

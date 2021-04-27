@@ -17,7 +17,7 @@ contract SuperNovaFactory is ISuperNovaFactory {
     // fields
     mapping(address => bool) public map;
     address[] public list;
-    address private _supernova;
+    address public _supernova;
 
     /**
      * @param supernova_ address of SuperNova token

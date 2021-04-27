@@ -12,20 +12,27 @@ pragma solidity ^0.6.12;
 
 import "./ISuperNovaFactory.sol";
 import "./SuperNova.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract SuperNovaFactory is ISuperNovaFactory {
+contract SuperNovaFactory is ISuperNovaFactory,Ownable {
     // fields
     mapping(address => bool) public map;
     address[] public list;
     address private _supernova;
 
+    address public _feeCollector;
     /**
      * @param supernova_ address of SuperNova token
      */
-    constructor(address supernova_) public {
+    constructor(address supernova_, address feeCollector_) public {
         _supernova = supernova_;
+        _feeCollector = feeCollector_;
     }
 
+    function setFeeCollector(address feeCollector_) public onlyOwner {
+        require(feeCollector_ != address(0), "SUPERNOVA FACTORY : address cannot be null");
+        _feeCollector = feeCollector_;
+    }
     /**
      * @inheritdoc ISuperNovaFactory
      */
@@ -43,7 +50,8 @@ contract SuperNovaFactory is ISuperNovaFactory {
             bonusMin,
             bonusMax,
             bonusPeriod,
-            _supernova
+            _supernova,
+            _feeCollector
         );
         superNova.transferOwnership(msg.sender);
 

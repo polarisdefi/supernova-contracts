@@ -56,6 +56,8 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
     uint256 public constant BONUS_DECIMALS = 18;
     uint256 public constant INITIAL_SHARES_PER_TOKEN = 10**6;
     uint256 public constant MAX_ACTIVE_FUNDINGS = 16;
+    uint256 public constant REWARD_FEE_DEDUCTION = 4;
+
 
     // token pool fields
     SuperNovaPool private immutable _stakingPool;
@@ -82,7 +84,9 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
 
     // polar fields
     IERC20 private immutable _polar;
-
+    
+    // fee Collector set by supernova factory
+    address feeCollector;
     /**
      * @param stakingToken_ the token that will be staked
      * @param rewardToken_ the token distributed to users as they unstake
@@ -97,13 +101,14 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
         uint256 bonusMin_,
         uint256 bonusMax_,
         uint256 bonusPeriod_,
-        address polar_
+        address polar_,
+        address feeCollector_
     ) public {
         require(
             bonusMin_ <= bonusMax_,
             "SuperNova: initial time bonus greater than max"
         );
-
+        feeCollector = feeCollector_;
         _stakingPool = new SuperNovaPool(stakingToken_);
         _unlockedPool = new SuperNovaPool(rewardToken_);
         _lockedPool = new SuperNovaPool(rewardToken_);
@@ -407,7 +412,9 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
         _stakingPool.transfer(msg.sender, amount);
         emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), "");
         if (rewardAmount > 0) {
-            _unlockedPool.transfer(msg.sender, rewardAmount);
+            uint256 feeAmountFromReward = rewardAmount.mul(REWARD_FEE_DEDUCTION).div(100);
+            _unlockedPool.transfer(msg.sender, rewardAmount.sub(feeAmountFromReward));
+            _unlockedPool.transfer(feeCollector, feeAmountFromReward);
             emit RewardsDistributed(msg.sender, rewardAmount);
         }
         if (polar > 0) {
@@ -594,6 +601,10 @@ contract SuperNova is ISuperNova, ReentrancyGuard {
             return 10**BONUS_DECIMALS;
         }
 
+       require(
+            polar >= 10**BONUS_DECIMALS,
+            "SUPERNOVA: POLAR amount is between 0 and 1"
+        );
         uint256 buffer = uint256(10**(BONUS_DECIMALS - 2)); // 0.01
         uint256 r = ratio().add(buffer);
         uint256 x = polar.add(buffer);

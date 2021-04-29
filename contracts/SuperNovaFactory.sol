@@ -18,7 +18,7 @@ contract SuperNovaFactory is ISuperNovaFactory,Ownable {
     // fields
     mapping(address => bool) public map;
     address[] public list;
-    address private _supernova;
+    address public _supernova;
 
     address public _feeCollector;
     /**
